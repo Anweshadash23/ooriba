@@ -11,6 +11,7 @@ class OoribaApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'OORIBA_S3',
       theme: ThemeData(
         primarySwatch: Colors.blue,
@@ -57,7 +58,8 @@ class LoginPage extends StatelessWidget {
                       children: <Widget>[
                         const Text(
                           'Welcome To OORIBA-S3',
-                          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                              fontSize: 24, fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 40),
                         const TextField(
@@ -107,7 +109,9 @@ class LoginPage extends StatelessWidget {
                                   ..onTap = () {
                                     Navigator.push(
                                       context,
-                                      MaterialPageRoute(builder: (context) => const SignUpPage()),
+                                      MaterialPageRoute(
+                                          builder: (context) =>
+                                              const SignUpPage()),
                                     );
                                   },
                               ),
@@ -118,7 +122,8 @@ class LoginPage extends StatelessWidget {
                           onPressed: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (context) => const HRLoginPage()),
+                              MaterialPageRoute(
+                                  builder: (context) => const HRLoginPage()),
                             );
                           },
                           child: const Text('HR sign-in here'),

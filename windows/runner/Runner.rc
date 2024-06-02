@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "ooriba" "\0"
+            VALUE "FileDescription", "oorib3_s3" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "ooriba" "\0"
+            VALUE "InternalName", "oorib3_s3" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2024 com.example. All rights reserved." "\0"
-            VALUE "OriginalFilename", "ooriba.exe" "\0"
-            VALUE "ProductName", "ooriba" "\0"
+            VALUE "OriginalFilename", "oorib3_s3.exe" "\0"
+            VALUE "ProductName", "oorib3_s3" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
