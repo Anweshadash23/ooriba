@@ -1,4 +1,4 @@
-# oorib3_s3
+# ooriba_s3
 
 A new Flutter project.
 

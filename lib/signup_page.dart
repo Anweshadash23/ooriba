@@ -1,4 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
+import 'package:ooriba_s3/services/employeeService.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -11,7 +15,52 @@ class SignUpPage extends StatefulWidget {
 class _SignUpPageState extends State<SignUpPage> {
   final _formKey = GlobalKey<FormState>();
   DateTime? _dob;
-  String? _aadharCopyPath;
+  final _phoneNumber = TextEditingController();
+  final _firstName = TextEditingController();
+  final _middleName = TextEditingController();
+  final _lastName = TextEditingController();
+  final _email = TextEditingController();
+  final _panNo = TextEditingController();
+  final _residentialAddress = TextEditingController();
+  final _permanentAddress = TextEditingController();
+  final _password = TextEditingController();
+  File? dpImage, supportImage,adhaarImage;
+  final EmployeeService _employeeService = EmployeeService();
+
+  Future<void> _pickImage(int x) async {
+    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        if (x==2) {
+          dpImage = File(pickedFile.path);
+        }if(x==1) {
+          adhaarImage = File(pickedFile.path);
+        }if(x==3){
+          supportImage=File(pickedFile.path);
+        }
+      });
+    }
+  }
+
+  void _submitForm() async {
+    // final dob=_dob;
+    final firstName = _firstName.text;
+    final middlenName = _middleName.text;
+    final lastName = _lastName.text;
+    final email = _email.text;
+    final password = _password.text;
+    final panNo = _panNo.text;
+    final resAdd = _residentialAddress.text;
+    final perAdd = _permanentAddress.text;
+    final phoneNo = _phoneNumber.text;
+
+    String dob = DateFormat.yMd().format(_dob!);
+    await _employeeService.addEmployee(firstName, middlenName, lastName, email,
+        password, panNo, resAdd, perAdd, phoneNo, dob, dpImage!,adhaarImage!,supportImage!,
+        context: context);
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text('Signed up successfully')));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +79,7 @@ class _SignUpPageState extends State<SignUpPage> {
               child: Container(
                 padding: const EdgeInsets.all(16.0),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(10),
                   boxShadow: const [
                     BoxShadow(
@@ -47,10 +96,12 @@ class _SignUpPageState extends State<SignUpPage> {
                     children: <Widget>[
                       const Text(
                         'Sign Up',
-                        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            fontSize: 24, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 20),
                       TextFormField(
+                        controller: _firstName,
                         decoration: const InputDecoration(
                           labelText: 'First Name',
                           border: OutlineInputBorder(),
@@ -64,6 +115,7 @@ class _SignUpPageState extends State<SignUpPage> {
                       ),
                       const SizedBox(height: 20),
                       TextFormField(
+                        controller: _middleName,
                         decoration: const InputDecoration(
                           labelText: 'Middle Name',
                           border: OutlineInputBorder(),
@@ -71,6 +123,7 @@ class _SignUpPageState extends State<SignUpPage> {
                       ),
                       const SizedBox(height: 20),
                       TextFormField(
+                        controller: _lastName,
                         decoration: const InputDecoration(
                           labelText: 'Last Name',
                           border: OutlineInputBorder(),
@@ -84,6 +137,7 @@ class _SignUpPageState extends State<SignUpPage> {
                       ),
                       const SizedBox(height: 20),
                       TextFormField(
+                        controller: _email,
                         decoration: const InputDecoration(
                           labelText: 'Email',
                           border: OutlineInputBorder(),
@@ -97,6 +151,7 @@ class _SignUpPageState extends State<SignUpPage> {
                       ),
                       const SizedBox(height: 20),
                       TextFormField(
+                        controller: _password,
                         decoration: const InputDecoration(
                           labelText: 'Password',
                           border: OutlineInputBorder(),
@@ -111,6 +166,7 @@ class _SignUpPageState extends State<SignUpPage> {
                       ),
                       const SizedBox(height: 20),
                       TextFormField(
+                        controller: _phoneNumber,
                         decoration: const InputDecoration(
                           labelText: 'Phone Number',
                           border: OutlineInputBorder(),
@@ -150,6 +206,7 @@ class _SignUpPageState extends State<SignUpPage> {
                       ),
                       const SizedBox(height: 20),
                       TextFormField(
+                        controller: _panNo,
                         decoration: const InputDecoration(
                           labelText: 'Pan Number',
                           border: OutlineInputBorder(),
@@ -163,6 +220,7 @@ class _SignUpPageState extends State<SignUpPage> {
                       ),
                       const SizedBox(height: 20),
                       TextFormField(
+                        controller: _residentialAddress,
                         decoration: const InputDecoration(
                           labelText: 'Residential Address',
                           border: OutlineInputBorder(),
@@ -176,6 +234,7 @@ class _SignUpPageState extends State<SignUpPage> {
                       ),
                       const SizedBox(height: 20),
                       TextFormField(
+                        controller: _permanentAddress,
                         decoration: const InputDecoration(
                           labelText: 'Permanent Address',
                           border: OutlineInputBorder(),
@@ -189,41 +248,34 @@ class _SignUpPageState extends State<SignUpPage> {
                       ),
                       const SizedBox(height: 20),
                       ElevatedButton(
-                        onPressed: () async {
-                          // TODO: Implement Aadhar copy upload functionality
-                          final String? result = await Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const AadharCopyUploadPage()),
-                          );
-                          if (result != null) {
-                            setState(() {
-                              _aadharCopyPath = result;
-                            });
-                          }
-                        },
-                        child: Text(_aadharCopyPath == null ? 'Upload Aadhar Copy' : 'Aadhar Copy Uploaded'),
-                      ),
-                      const SizedBox(height: 20),
+                        onPressed: () => _pickImage(1),
+                        child: Text('Upload Adhaar Card Copy'),
+                              ),
+                          adhaarImage == null
+                          ? Text('No Adhaar Card Copy Uploaded.')
+                          : Image.file(adhaarImage!,
+                              height: 100, width: 100),
+                      SizedBox(height: 20),
                       ElevatedButton(
-                        onPressed: () {
-                          // TODO: Implement facial photo upload functionality
-                        },
-                        child: const Text('Upload Facial Photo'),
+                        onPressed: () => _pickImage(2),
+                        child: Text('Upload Profile Picture'),
                       ),
-                      const SizedBox(height: 20),
+                      dpImage == null
+                          ? Text('No profile picture selected.')
+                          : Image.file(dpImage!,
+                              height: 100, width: 100),
+                      SizedBox(height: 20),
                       ElevatedButton(
-                        onPressed: () {
-                          // TODO: Implement supporting document upload functionality
-                        },
-                        child: const Text('Upload Supporting Document'),
+                       onPressed: () => _pickImage(3),
+                        child: Text('Upload Supporting Document'),
                       ),
-                      const SizedBox(height: 20),
+                      supportImage == null
+                          ? Text('No Document selected.')
+                          : Image.file(supportImage!,
+                              height: 100, width: 100),
+                      SizedBox(height: 20),
                       ElevatedButton(
-                        onPressed: () {
-                          if (_formKey.currentState!.validate()) {
-                            // TODO: Implement sign up functionality
-                          }
-                        },
+                        onPressed: _submitForm,
                         child: const Text('Sign Up'),
                       ),
                     ],
@@ -232,28 +284,6 @@ class _SignUpPageState extends State<SignUpPage> {
               ),
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class AadharCopyUploadPage extends StatelessWidget {
-  const AadharCopyUploadPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Upload Aadhar Copy'),
-      ),
-      body: Center(
-        child: ElevatedButton(
-          onPressed: () {
-            // TODO: Implement Aadhar copy upload functionality
-            Navigator.pop(context, 'path_to_aadhar_copy');
-          },
-          child: const Text('Upload Aadhar Copy'),
         ),
       ),
     );

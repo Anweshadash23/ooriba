@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:ooriba_s3/HR/attendance.dart';
+import 'package:ooriba_s3/services/auth_service.dart';
 
 void main() {
   runApp(MyApp());
@@ -112,11 +114,23 @@ class _HRDashboardPageState extends State<HRDashboardPage> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.logout),
-              title: const Text('Log Out'),
+              leading: const Icon(Icons.access_time),
+              title: const Text('Attendance'),
               onTap: () {
                 Navigator.pop(context);
-                // Implement log out logic
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => DatePickerButton()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.logout),
+              title: const Text('Log Out'),
+              onTap: () async {
+                Navigator.pop(context);
+                await AuthService().signout(context: context);
               },
             ),
           ],
@@ -198,7 +212,7 @@ class _HRDashboardPageState extends State<HRDashboardPage> {
     return GestureDetector(
       onTap: () => onTap(context),
       child: Container(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(1.0),
         width: 200.0,
         decoration: BoxDecoration(
           color: color,
@@ -212,7 +226,7 @@ class _HRDashboardPageState extends State<HRDashboardPage> {
               color: Colors.white,
               size: 36.0,
             ),
-            SizedBox(height: 8.0),
+            SizedBox(height: 2.0),
             Text(
               title,
               style: TextStyle(
@@ -237,9 +251,9 @@ class _HRDashboardPageState extends State<HRDashboardPage> {
     }
 
     return Card(
-      margin: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      margin: EdgeInsets.symmetric(horizontal: 2.0, vertical: 2.0),
       child: Padding(
-        padding: EdgeInsets.all(16.0),
+        padding: EdgeInsets.all(8.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
@@ -247,7 +261,9 @@ class _HRDashboardPageState extends State<HRDashboardPage> {
               children: <Widget>[
                 CircleAvatar(
                   // Placeholder image, replace with actual photo
-                  backgroundImage: AssetImage('assets/placeholder.jpg'),
+                  // child: Image.network(
+                  //   'https://firebasestorage.googleapis.com/v0/b/ooriba-s3-add23.appspot.com/o/image%2Fdp.png?alt=media&token=87f1b3a7-d249-4976-bdf9-5fdaa808bea0',
+                  // ),
                   radius: 30.0,
                 ),
                 SizedBox(width: 16.0),
@@ -354,7 +370,8 @@ class _HRDashboardPageState extends State<HRDashboardPage> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Registered Employees'),
-          content: const Text('Details of registered employees will be shown here.'),
+          content:
+              const Text('Details of registered employees will be shown here.'),
           actions: <Widget>[
             TextButton(
               onPressed: () {
@@ -394,7 +411,8 @@ class _HRDashboardPageState extends State<HRDashboardPage> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Rejected Applications'),
-          content: const Text('Details of rejected applications will be shown here.'),
+          content: const Text(
+              'Details of rejected applications will be shown here.'),
           actions: <Widget>[
             TextButton(
               onPressed: () {
@@ -512,13 +530,16 @@ class _EditEmployeePageState extends State<EditEmployeePage> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.employee.name);
-    _ageController = TextEditingController(text: widget.employee.age.toString());
+    _ageController =
+        TextEditingController(text: widget.employee.age.toString());
     _phoneController = TextEditingController(text: widget.employee.phone);
     _emailController = TextEditingController(text: widget.employee.email);
     _dobController = TextEditingController(text: widget.employee.dob);
     _panController = TextEditingController(text: widget.employee.pan);
-    _residentialAddressController = TextEditingController(text: widget.employee.residentialAddress);
-    _permanentAddressController = TextEditingController(text: widget.employee.permanentAddress);
+    _residentialAddressController =
+        TextEditingController(text: widget.employee.residentialAddress);
+    _permanentAddressController =
+        TextEditingController(text: widget.employee.permanentAddress);
   }
 
   @override
@@ -573,11 +594,13 @@ class _EditEmployeePageState extends State<EditEmployeePage> {
               ),
               TextField(
                 controller: _residentialAddressController,
-                decoration: const InputDecoration(labelText: 'Residential Address'),
+                decoration:
+                    const InputDecoration(labelText: 'Residential Address'),
               ),
               TextField(
                 controller: _permanentAddressController,
-                decoration: const InputDecoration(labelText: 'Permanent Address'),
+                decoration:
+                    const InputDecoration(labelText: 'Permanent Address'),
               ),
               SizedBox(height: 24.0),
               Row(

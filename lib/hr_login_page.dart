@@ -1,6 +1,6 @@
 // hr_login_page.dart
 import 'package:flutter/material.dart';
-import 'hr_dashboard_page.dart';
+import 'package:ooriba_s3/services/auth_service.dart';
 
 class HRLoginPage extends StatefulWidget {
   const HRLoginPage({super.key});
@@ -11,36 +11,8 @@ class HRLoginPage extends StatefulWidget {
 }
 
 class _HRLoginPageState extends State<HRLoginPage> {
-  final TextEditingController _loginIdController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-
-  void _signIn() {
-    final loginId = _loginIdController.text;
-    final password = _passwordController.text;
-
-    // Mock authentication logic
-    if (loginId == 'admin' && password == 'password') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const HRDashboardPage()),
-      );
-    } else {
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Error'),
-          content: const Text('Invalid login credentials'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -53,10 +25,10 @@ class _HRLoginPageState extends State<HRLoginPage> {
             final maxWidth = constraints.maxWidth;
 
             return Container(
-              width: maxWidth * 0.3,
+              width: maxWidth * 1.3,
               padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(10),
                 boxShadow: const [
                   BoxShadow(
@@ -71,7 +43,7 @@ class _HRLoginPageState extends State<HRLoginPage> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   TextField(
-                    controller: _loginIdController,
+                    controller: _emailController,
                     decoration: const InputDecoration(
                       labelText: 'Login ID',
                       border: OutlineInputBorder(),
@@ -88,7 +60,14 @@ class _HRLoginPageState extends State<HRLoginPage> {
                   ),
                   const SizedBox(height: 20),
                   ElevatedButton(
-                    onPressed: _signIn,
+                    onPressed: () async {
+                            await AuthService().signin(
+                              email: _emailController.text,
+                              password: _passwordController.text,
+                              role:"HR",
+                              context: context
+                            );
+                          },
                     child: const Text('Sign In'),
                   ),
                   const SizedBox(height: 10),
