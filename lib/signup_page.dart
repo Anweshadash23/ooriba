@@ -1,14 +1,17 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:ooriba_s3/employee_signup_success.dart';
 import 'package:ooriba_s3/services/employeeService.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'dart:io';
+import 'package:ooriba_s3/services/signup_email_service.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
 
   @override
-  // ignore: library_private_types_in_public_api
   _SignUpPageState createState() => _SignUpPageState();
 }
 
@@ -24,42 +27,91 @@ class _SignUpPageState extends State<SignUpPage> {
   final _residentialAddress = TextEditingController();
   final _permanentAddress = TextEditingController();
   final _password = TextEditingController();
-  File? dpImage, supportImage,adhaarImage;
+  final _aadharNo = TextEditingController();
+  File? dpImage, supportImage, adhaarImage;
   final EmployeeService _employeeService = EmployeeService();
 
   Future<void> _pickImage(int x) async {
-    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
+    final pickedFile =
+        await ImagePicker().pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
       setState(() {
-        if (x==2) {
+        if (x == 2) {
           dpImage = File(pickedFile.path);
-        }if(x==1) {
+        }
+        if (x == 1) {
           adhaarImage = File(pickedFile.path);
-        }if(x==3){
-          supportImage=File(pickedFile.path);
+        }
+        if (x == 3) {
+          supportImage = File(pickedFile.path);
         }
       });
     }
   }
 
   void _submitForm() async {
-    // final dob=_dob;
-    final firstName = _firstName.text;
-    final middlenName = _middleName.text;
-    final lastName = _lastName.text;
-    final email = _email.text;
-    final password = _password.text;
-    final panNo = _panNo.text;
-    final resAdd = _residentialAddress.text;
-    final perAdd = _permanentAddress.text;
-    final phoneNo = _phoneNumber.text;
+    if (_formKey.currentState!.validate()) {
+      final firstName = _firstName.text;
+      final middleName = _middleName.text;
+      final lastName = _lastName.text;
+      final email = _email.text;
+      final password = _password.text;
+      var panNo = _panNo.text;
+      final resAdd = _residentialAddress.text;
+      final perAdd = _permanentAddress.text;
+      final phoneNo = _phoneNumber.text;
+      final dob = DateFormat('dd/MM/yyyy').format(_dob!);
+      var aadharNo = _aadharNo.text
+          .replaceAll(' ', ''); // Remove spaces from Aadhaar number
 
-    String dob = DateFormat.yMd().format(_dob!);
-    await _employeeService.addEmployee(firstName, middlenName, lastName, email,
-        password, panNo, resAdd, perAdd, phoneNo, dob, dpImage!,adhaarImage!,supportImage!,
-        context: context);
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text('Signed up successfully')));
+      // Convert PAN number to uppercase
+      panNo = panNo.toUpperCase();
+
+      // Ensure all images are selected
+      if (dpImage == null || adhaarImage == null || supportImage == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Please upload all required images')),
+        );
+        return;
+      }
+
+      try {
+        // Add employee data to Firestore
+        await _employeeService.addEmployee(
+          firstName,
+          middleName,
+          lastName,
+          email,
+          password,
+          panNo,
+          resAdd,
+          perAdd,
+          phoneNo,
+          dob,
+          aadharNo,
+          dpImage!,
+          adhaarImage!,
+          supportImage!,
+          context: context,
+        );
+
+        // Send sign up email
+        // await SignUpEmailService().sendSignUpEmail(email);
+
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Signed up successfully')),
+        );
+         Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => ConfirmationPage()));
+      } catch (e) {
+        // Handle any errors
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to sign up: $e')),
+        );
+      }
+    }
   }
 
   @override
@@ -79,7 +131,7 @@ class _SignUpPageState extends State<SignUpPage> {
               child: Container(
                 padding: const EdgeInsets.all(16.0),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(10),
                   boxShadow: const [
                     BoxShadow(
@@ -110,6 +162,12 @@ class _SignUpPageState extends State<SignUpPage> {
                           if (value == null || value.isEmpty) {
                             return 'Please enter your first name';
                           }
+                          if (value.length > 50) {
+                            return 'First name cannot exceed 50 characters';
+                          }
+                          if (RegExp(r'[^a-zA-Z.\s]').hasMatch(value)) {
+                            return 'First name can only contain letters and dot(.)';
+                          }
                           return null;
                         },
                       ),
@@ -120,6 +178,15 @@ class _SignUpPageState extends State<SignUpPage> {
                           labelText: 'Middle Name',
                           border: OutlineInputBorder(),
                         ),
+                        validator: (value) {
+                          if (value!.length > 50) {
+                            return 'Middle name cannot exceed 50 characters';
+                          }
+                          if (RegExp(r'[^a-zA-Z.\s]').hasMatch(value)) {
+                            return 'Middle name can only contain letters and dot(.)';
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 20),
                       TextFormField(
@@ -131,6 +198,12 @@ class _SignUpPageState extends State<SignUpPage> {
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Please enter your last name';
+                          }
+                          if (value.length > 50) {
+                            return 'Last name cannot exceed 50 characters';
+                          }
+                          if (RegExp(r'[^a-zA-Z.\s]').hasMatch(value)) {
+                            return 'Last name can only contain letters and dot(.)';
                           }
                           return null;
                         },
@@ -145,6 +218,11 @@ class _SignUpPageState extends State<SignUpPage> {
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Please enter your email';
+                          }
+                          if (!RegExp(
+                                  r'^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7}$')
+                              .hasMatch(value)) {
+                            return 'Please enter a valid email address';
                           }
                           return null;
                         },
@@ -161,62 +239,86 @@ class _SignUpPageState extends State<SignUpPage> {
                           if (value == null || value.isEmpty) {
                             return 'Please enter your password';
                           }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 20),
-                      TextFormField(
-                        controller: _phoneNumber,
-                        decoration: const InputDecoration(
-                          labelText: 'Phone Number',
-                          border: OutlineInputBorder(),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter your phone number';
+                          if (!RegExp(
+                                  r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$')
+                              .hasMatch(value)) {
+                            return 'should contain uppercase,number,special character';
                           }
                           return null;
                         },
-                      ),
-                      const SizedBox(height: 20),
-                      TextFormField(
-                        decoration: const InputDecoration(
-                          labelText: 'Date of Birth',
-                          border: OutlineInputBorder(),
-                        ),
-                        readOnly: true,
-                        onTap: () async {
-                          DateTime? pickedDate = await showDatePicker(
-                            context: context,
-                            initialDate: DateTime.now(),
-                            firstDate: DateTime(1900),
-                            lastDate: DateTime(2100),
-                          );
-                          if (pickedDate != null) {
-                            setState(() {
-                              _dob = pickedDate;
-                            });
-                          }
-                        },
-                        controller: TextEditingController(
-                          text: _dob != null
-                              ? "${_dob!.day}/${_dob!.month}/${_dob!.year}"
-                              : '',
-                        ),
                       ),
                       const SizedBox(height: 20),
                       TextFormField(
                         controller: _panNo,
                         decoration: const InputDecoration(
-                          labelText: 'Pan Number',
+                          labelText: 'PAN Number',
                           border: OutlineInputBorder(),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Please enter your Pan number';
+                            return 'Please enter your PAN number';
+                          }
+                          if (value.length != 10) {
+                            return 'PAN number must be exactly 10 characters';
+                          }
+                          if (RegExp(r'[^a-zA-Z0-9]').hasMatch(value)) {
+                            return 'PAN number can only contain letters and digits';
                           }
                           return null;
                         },
+                      ),
+                      const SizedBox(height: 20),
+                      TextFormField(
+                        controller: _aadharNo,
+                        decoration: const InputDecoration(
+                          labelText: 'Aadhaar Number',
+                          border: OutlineInputBorder(),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your Aadhaar number';
+                          }
+                          if (value.length != 12 &&
+                              value.replaceAll(' ', '').length != 12) {
+                            return 'Aadhaar number must be exactly 12 digits';
+                          }
+                          if (RegExp(r'[^0-9\s]').hasMatch(value)) {
+                            return 'Aadhaar number can only contain digits and spaces';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 20),
+                      GestureDetector(
+                        onTap: () async {
+                          DateTime? picked = await showDatePicker(
+                            context: context,
+                            initialDate: DateTime.now(),
+                            firstDate: DateTime(1900),
+                            lastDate: DateTime.now(),
+                          );
+                          if (picked != null) {
+                            setState(() {
+                              _dob = picked;
+                            });
+                          }
+                        },
+                        child: AbsorbPointer(
+                          child: TextFormField(
+                            decoration: InputDecoration(
+                              labelText: _dob == null
+                                  ? 'Date of Birth'
+                                  : DateFormat('dd/MM/yyyy').format(_dob!),
+                              border: OutlineInputBorder(),
+                            ),
+                            validator: (value) {
+                              if (_dob == null) {
+                                return 'Please select your date of birth';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
                       ),
                       const SizedBox(height: 20),
                       TextFormField(
@@ -228,6 +330,9 @@ class _SignUpPageState extends State<SignUpPage> {
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Please enter your residential address';
+                          }
+                          if (value.length > 100) {
+                            return 'Address cannot exceed 100 characters';
                           }
                           return null;
                         },
@@ -243,37 +348,57 @@ class _SignUpPageState extends State<SignUpPage> {
                           if (value == null || value.isEmpty) {
                             return 'Please enter your permanent address';
                           }
+                          if (value.length > 100) {
+                            return 'Address cannot exceed 100 characters';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 20),
+                      TextFormField(
+                        controller: _phoneNumber,
+                        decoration: const InputDecoration(
+                          labelText: 'Phone Number',
+                          border: OutlineInputBorder(),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your phone number';
+                          }
+                          if (!RegExp(r'^[0-9]{10}$').hasMatch(value)) {
+                            return 'Phone number must be exactly 10 digits';
+                          }
                           return null;
                         },
                       ),
                       const SizedBox(height: 20),
                       ElevatedButton(
-                        onPressed: () => _pickImage(1),
-                        child: Text('Upload Adhaar Card Copy'),
-                              ),
-                          adhaarImage == null
-                          ? Text('No Adhaar Card Copy Uploaded.')
-                          : Image.file(adhaarImage!,
-                              height: 100, width: 100),
-                      SizedBox(height: 20),
-                      ElevatedButton(
                         onPressed: () => _pickImage(2),
-                        child: Text('Upload Profile Picture'),
+                        child: const Text('Upload Profile Picture'),
                       ),
+                      const SizedBox(height: 10),
                       dpImage == null
-                          ? Text('No profile picture selected.')
-                          : Image.file(dpImage!,
-                              height: 100, width: 100),
-                      SizedBox(height: 20),
+                          ? const Text('No image selected.')
+                          : Image.file(dpImage!),
+                      const SizedBox(height: 20),
                       ElevatedButton(
-                       onPressed: () => _pickImage(3),
-                        child: Text('Upload Supporting Document'),
+                        onPressed: () => _pickImage(1),
+                        child: const Text('Upload Aadhaar Doc'),
                       ),
+                      const SizedBox(height: 10),
+                      adhaarImage == null
+                          ? const Text('No image selected.')
+                          : Image.file(adhaarImage!),
+                      const SizedBox(height: 20),
+                      ElevatedButton(
+                        onPressed: () => _pickImage(3),
+                        child: const Text('Upload Supporting Doc'),
+                      ),
+                      const SizedBox(height: 10),
                       supportImage == null
-                          ? Text('No Document selected.')
-                          : Image.file(supportImage!,
-                              height: 100, width: 100),
-                      SizedBox(height: 20),
+                          ? const Text('No image selected.')
+                          : Image.file(supportImage!),
+                      const SizedBox(height: 20),
                       ElevatedButton(
                         onPressed: _submitForm,
                         child: const Text('Sign Up'),

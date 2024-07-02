@@ -7,8 +7,8 @@ class FirestoreService {
   Future<Map<String, dynamic>?> getEmployeeByEmail(String email) async {
     try {
       QuerySnapshot snapshot = await _db
-          .collection('Employee')
-          .where('email', isEqualTo: email)
+          .collection('Regemp')
+          .where('email', isEqualTo: email).where('role',isEqualTo: 'Standard')
           .limit(1)
           .get();
 
@@ -30,7 +30,12 @@ class FirestoreService {
     }
     return null;
   }
-  //  final FirestoreService firestore_Service = FirestoreService();
-  //  Map<String, dynamic>? employeeData = await firestore_Service.searchEmployee(email: email)
-  // String firstName = employeeData != null ? employeeData['firstName'] ?? '' : '';
+   Future<List<Map<String, dynamic>>> getAllEmployees() async {
+    try {
+      QuerySnapshot snapshot = await _db.collection('Regemp').get();
+      return snapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+    } catch (e) {
+      print(e);
+      return [];}
+}
 }

@@ -1,26 +1,46 @@
-// import 'package:camera/camera.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:ooriba_s3/firebase_options.dart';
 import 'package:ooriba_s3/HR/hr_dashboard_page.dart';
-import 'package:ooriba_s3/hr_login_page.dart';
+import 'package:ooriba_s3/firebase_options.dart';
+import 'package:ooriba_s3/post_login_page.dart';
 import 'package:ooriba_s3/services/auth_service.dart';
 import 'package:ooriba_s3/services/dark_mode.dart';
 import 'package:ooriba_s3/signup_page.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
-// List<CameraDescription>? cameras;
-Future <void> main() async{
+
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
-);
-  // cameras = await availableCameras();
-  runApp( const OoribaApp());
+  );
+  await _requestPermissions();
+  final AuthService authService = AuthService();
+  final String? email = await authService.getUserSession();
+  final String? role = await authService.getUserRole();
+  
+  runApp(OoribaApp(isLoggedIn: email != null,email: email, userRole: role));
+}
+
+Future<void> _requestPermissions() async {
+  PermissionStatus status = await Permission.storage.request();
+  if (status.isGranted) {
+    print('Storage permission granted');
+  } else if (status.isDenied) {
+    print('Storage permission denied');
+  } else if (status.isPermanentlyDenied) {
+    print('Storage permission permanently denied');
+    openAppSettings();
+  }
 }
 
 class OoribaApp extends StatelessWidget {
-  const OoribaApp({super.key});
+  final bool isLoggedIn;
+  final String? userRole;
+  final String? email;
+
+  const OoribaApp({Key? key, required this.isLoggedIn, required this.email,required this.userRole}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +49,7 @@ class OoribaApp extends StatelessWidget {
       child: Consumer<DarkModeService>(
         builder: (context, darkModeService, _) {
           return MaterialApp(
-              debugShowCheckedModeBanner: false,
+            debugShowCheckedModeBanner: false,
             title: 'OORIBA_S3',
             theme: ThemeData(
               primarySwatch: Colors.blue,
@@ -40,16 +60,26 @@ class OoribaApp extends StatelessWidget {
               brightness: Brightness.dark,
             ),
             themeMode: darkModeService.isDarkMode ? ThemeMode.dark : ThemeMode.light,
-            home: LoginPage(),
+            home: _getInitialPage(isLoggedIn,email, userRole),
           );
         },
       ),
     );
   }
 
+  Widget _getInitialPage(bool isLoggedIn,String? email, String? role) {
+    if (!isLoggedIn) {
+      return LoginPage();
+    } else if (role == 'HR') {
+      return HRDashboardPage();
+    } else {
+      email!=null?email=email:email='';
+      return PostLoginPage(email: email, userDetails: {});
+    }
   }
-class LoginPage extends StatelessWidget {
+}
 
+class LoginPage extends StatelessWidget {
   LoginPage({super.key});
 
   final TextEditingController _emailController = TextEditingController();
@@ -61,7 +91,7 @@ class LoginPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('OORIBA_S3'),
-                actions: [
+        actions: [
           IconButton(
             icon: Icon(darkModeService.isDarkMode ? Icons.light_mode : Icons.dark_mode),
             onPressed: () {
@@ -77,9 +107,7 @@ class LoginPage extends StatelessWidget {
               padding: const EdgeInsets.all(16.0),
               child: Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    maxWidth: 400, // Limit the width for larger screens
-                  ),
+                  constraints: const BoxConstraints(maxWidth: 400),
                   child: Container(
                     padding: const EdgeInsets.all(16.0),
                     decoration: BoxDecoration(
@@ -96,15 +124,25 @@ class LoginPage extends StatelessWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: <Widget>[
-                        // ......................................
                         const Text(
                           'Welcome To OORIBA-S3',
                           style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                         ),
-                        const SizedBox(height: 40),
+                        const SizedBox(height: 20),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: <Widget>[
+                            Image.asset(
+                              'assets/images/companyLogo.png',
+                              width: 200,
+                              height: 190,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
                         TextField(
                           controller: _emailController,
-                          decoration:const InputDecoration(
+                          decoration: const InputDecoration(
                             filled: true,
                             labelText: 'Email ID',
                             border: OutlineInputBorder(),
@@ -124,14 +162,7 @@ class LoginPage extends StatelessWidget {
                           alignment: Alignment.centerRight,
                           child: TextButton(
                             onPressed: () {
-                              // TODO: Implement forgot password functionality
-                              Navigator.push(
-                              context,
-                              //.........................................................................
-                              // MaterialPageRoute(builder: (context) =>DatePickerButton()),
-                              MaterialPageRoute(builder: (context) =>HRDashboardPage()),
-                            //   MaterialPageRoute(builder: (context) =>LLMyHomePage(cameras: cameras!) ),
-                            );
+                              // Handle forgot password
                             },
                             child: const Text('Forgot Password'),
                           ),
@@ -139,21 +170,22 @@ class LoginPage extends StatelessWidget {
                         const SizedBox(height: 20),
                         ElevatedButton(
                           onPressed: () async {
-                            await AuthService().signin(
+                            bool success = await AuthService().signin(
                               email: _emailController.text,
                               password: _passwordController.text,
-                              role:"employee",
-                              context: context
+                              context: context,
                             );
+                            if (success) {
+                              // Navigation is handled within AuthService
+                            }
                           },
                           child: const Text('Sign In'),
                         ),
                         const SizedBox(height: 20),
                         RichText(
                           text: TextSpan(
-                            //..........................................................
                             text: "Don't have an account? ",
-                            style:TextStyle(color: Theme.of(context).textTheme.bodyLarge!.color),
+                            style: TextStyle(color: Theme.of(context).textTheme.bodyLarge!.color),
                             children: [
                               TextSpan(
                                 text: 'Sign Up here',
@@ -171,15 +203,6 @@ class LoginPage extends StatelessWidget {
                               ),
                             ],
                           ),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => const HRLoginPage()),
-                            );
-                          },
-                          child: const Text('HR sign-in here'),
                         ),
                       ],
                     ),
