@@ -10,14 +10,13 @@ import 'package:ooriba_s3/services/registered_service.dart';
 import 'package:ooriba_s3/services/reject_service.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:url_launcher/url_launcher.dart';
 // import 'package:emailjs/emailjs.dart';
 // import 'package:sms_advanced/sms_advanced.dart';
 
 class EmployeeDetailsPage extends StatefulWidget {
   final Map<String, dynamic> employeeData;
 
-  EmployeeDetailsPage({required this.employeeData});
+  const EmployeeDetailsPage({super.key, required this.employeeData});
 
   @override
   _EmployeeDetailsPageState createState() => _EmployeeDetailsPageState();
@@ -31,7 +30,7 @@ class _EmployeeDetailsPageState extends State<EmployeeDetailsPage> {
   final RejectService _rejectService = RejectService();
   final _formKey = GlobalKey<FormState>();
   final EmployeeIdGenerator _idGenerator = EmployeeIdGenerator();
-  TextEditingController _joiningDateController = TextEditingController();
+  final TextEditingController _joiningDateController = TextEditingController();
 
   @override
   void initState() {
@@ -48,13 +47,7 @@ class _EmployeeDetailsPageState extends State<EmployeeDetailsPage> {
     }
   }
 
-  // Future<void> _launchURL(String url) async {
-  //   if (await canLaunch(url)) {
-  //     await launch(url);
-  //   } else {
-  //     throw 'Could not launch $url';
-  //   }
-  // }
+
 
 Future<void> _downloadImage(String url, String fileName) async {
   Dio dio = Dio();
@@ -90,18 +83,18 @@ Future<void> _downloadImage(String url, String fileName) async {
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Unable to access downloads directory')),
+          const SnackBar(content: Text('Unable to access downloads directory')),
         );
       }
     } catch (e) {
       print('Error downloading image: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error downloading image')),
+        const SnackBar(content: Text('Error downloading image')),
       );
     }
   } else if (await Permission.storage.isDenied) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Storage permission denied')),
+      const SnackBar(content: Text('Storage permission denied')),
     );
   } else if (await Permission.storage.isPermanentlyDenied) {
     openAppSettings();
@@ -117,20 +110,23 @@ Future<void> _downloadImage(String url, String fileName) async {
   void _saveDetails() async {
     if (_formKey.currentState!.validate()) {
       try {
-        // Generate a new employee ID
-        final employeeId = await _idGenerator.generateEmployeeId();
+        String location = employeeData['location'];
+        if (location == null || location.isEmpty) {
+          throw Exception('Location is required to generate an employee ID');
+        }
+        final employeeId = await _idGenerator.generateEmployeeId(location);
         employeeData['employeeId'] = employeeId;
 
-        print('Saving data: ${employeeData['email']} -> $employeeData');
+        print('Saving data: ${employeeData['phoneNo']} -> $employeeData');
         await FirebaseFirestore.instance
             .collection('Regemp')
-            .doc(employeeData['email'])
+            .doc(employeeData['phoneNo'])
             .set(employeeData);
 
         // Delete the employee from the "Employee" collection
         await FirebaseFirestore.instance
             .collection('Employee')
-            .doc(employeeData['email'])
+            .doc(employeeData['phoneNo'])
             .delete();
 
         // Send SMS
@@ -151,7 +147,7 @@ Future<void> _downloadImage(String url, String fileName) async {
         // sender.sendSms(smsMessage);
 
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
               content: Text(
                   'Employee details updated, deleted from the Employee collection, and email sent successfully')),
         );
@@ -166,7 +162,6 @@ Future<void> _downloadImage(String url, String fileName) async {
       }
     }
   }
-
   final AcceptMailService _acceptMailService = AcceptMailService();
   Future<void> _acceptDetails() async {
     setState(() {
@@ -176,33 +171,56 @@ Future<void> _downloadImage(String url, String fileName) async {
       employeeData['role'] = 'Standard';
     });
 
-    try {
-      // Save user to Firebase Authentication
-      UserCredential userCredential = await FirebaseAuth.instance
+     if (employeeData['password']!=null && employeeData['email']!="null" && employeeData['email']!=null){
+      try{
+          UserCredential userCredential = await FirebaseAuth.instance
           .createUserWithEmailAndPassword(
               email: employeeData['email'], password: employeeData['password']);
       User? user = userCredential.user;
 
       if (user != null) {
-        user.updateProfile(displayName: employeeData['firstName']);
+        user.updateDisplayName(employeeData['firstName']);
         // user.sendEmailVerification();
       }
-
-      // Send acceptance email using EmailJS
-      await _acceptMailService.sendAcceptanceEmail(employeeData['email']);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(
-                'Employee added to authentication and acceptance email sent successfully')),
-      );
-    } catch (e) {
+      await _acceptMailService.sendAcceptanceEmail(employeeData['phoneNo']);
+      }
+      catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
             content: Text(
                 'Failed to add employee to authentication or send acceptance email: $e')),
       );
     }
+     }
+
+    // try {
+    //   // Send acceptance email using EmailJS
+    //   while (employeeData['email'] && employeeData['email']!="null" && employeeData['email']!=null){
+    //     // Save user to Firebase Authentication
+    //   UserCredential userCredential = await FirebaseAuth.instance
+    //       .createUserWithEmailAndPassword(
+    //           email: employeeData['email'], password: employeeData['password']);
+    //   User? user = userCredential.user;
+
+    //   if (user != null) {
+    //     user.updateDisplayName(employeeData['firstName']);
+    //     // user.sendEmailVerification();
+    //   }
+    //   await _acceptMailService.sendAcceptanceEmail(employeeData['email']);
+    //   }
+
+    //   ScaffoldMessenger.of(context).showSnackBar(
+    //     const SnackBar(
+    //         content: Text(
+    //             'Employee added to authentication and acceptance email sent successfully')),
+    //   );
+    // } catch (e) {
+    //   ScaffoldMessenger.of(context).showSnackBar(
+    //     SnackBar(
+    //         content: Text(
+    //             'Failed to add employee to authentication or send acceptance email: $e')),
+    //   );
+    // }
   }
 
   Future<void> _showRejectPopup() async {
@@ -213,11 +231,11 @@ Future<void> _downloadImage(String url, String fileName) async {
       barrierDismissible: false, // User must fill the reason and press a button
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Reject Reason'),
+          title: const Text('Reject Reason'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              Text(
+              const Text(
                   'Please provide a reason for rejecting the employee details:'),
               TextField(
                 onChanged: (value) {
@@ -235,20 +253,20 @@ Future<void> _downloadImage(String url, String fileName) async {
           ),
           actions: <Widget>[
             TextButton(
-              child: Text('Cancel'),
+              child: const Text('Cancel'),
               onPressed: () {
                 Navigator.of(context).pop();
               },
             ),
             ElevatedButton(
-              child: Text('Save'),
+              child: const Text('Save'),
               onPressed: () async {
                 if (reason != null && reason!.isNotEmpty) {
                   try {
                     await _rejectService.rejectEmployee(employeeData, reason!);
                     Navigator.of(context).pop();
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
+                      const SnackBar(
                           content: Text(
                               'Employee details rejected and saved successfully')),
                     );
@@ -277,15 +295,15 @@ Future<void> _downloadImage(String url, String fileName) async {
     print('Changes rejected');
   }
 
-  String? _validateEmail(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Email is required';
-    }
-    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-      return 'Enter a valid email address';
-    }
-    return null;
-  }
+  // String? _validateEmail(String? value) {
+  //   if (value == null || value.isEmpty) {
+  //     return 'Email is required';
+  //   }
+  //   if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+  //     return 'Enter a valid email address';
+  //   }
+  //   return null;
+  // }
 
   String? _validatePhoneNumber(String? value) {
     if (value == null || value.isEmpty) {
@@ -398,18 +416,18 @@ Future<void> _downloadImage(String url, String fileName) async {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Container(
+          SizedBox(
             width: 150,
             child: Text(
               '$label: ',
-              style: TextStyle(fontWeight: FontWeight.bold),
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
           Expanded(
             child: isEditing
                 ? TextFormField(
                     initialValue: employeeData[key] ?? '',
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                       border: OutlineInputBorder(),
                     ),
                     keyboardType:
@@ -432,11 +450,11 @@ Future<void> _downloadImage(String url, String fileName) async {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Container(
+          SizedBox(
             width: 150,
             child: Text(
               '$label: ',
-              style: TextStyle(fontWeight: FontWeight.bold),
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
           Expanded(
@@ -446,7 +464,7 @@ Future<void> _downloadImage(String url, String fileName) async {
                     child: AbsorbPointer(
                       child: TextFormField(
                         controller: _joiningDateController,
-                        decoration: InputDecoration(
+                        decoration: const InputDecoration(
                           border: OutlineInputBorder(),
                           suffixIcon: Icon(Icons.calendar_today),
                         ),
@@ -467,7 +485,7 @@ Future<void> _downloadImage(String url, String fileName) async {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Text(
+          const Text(
             'Password: ',
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
@@ -498,14 +516,14 @@ Future<void> _downloadImage(String url, String fileName) async {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Container(
+          SizedBox(
             width: 150,
             child: Text(
               '$label: ',
-              style: TextStyle(fontWeight: FontWeight.bold),
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
-          Container(
+          SizedBox(
             width: 100, // Fixed width
             height: 100, // Fixed height
             child: employeeData[key] != null
@@ -515,7 +533,7 @@ Future<void> _downloadImage(String url, String fileName) async {
                     image: employeeData[key], // Image URL from employeeData
                     fit: BoxFit.cover,
                   )
-                : Text('N/A'),
+                : const Text('N/A'),
           ),
         ],
       ),
@@ -528,11 +546,11 @@ Future<void> _downloadImage(String url, String fileName) async {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Container(
+          SizedBox(
             width: 150,
             child: Text(
               '$label: ',
-              style: TextStyle(fontWeight: FontWeight.bold),
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
         Expanded(
@@ -546,13 +564,13 @@ Future<void> _downloadImage(String url, String fileName) async {
               await _downloadImage(url, fileName);
             },
             style: ElevatedButton.styleFrom(
-              padding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-              minimumSize: Size(60, 40), // Adjust the size as needed
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+              minimumSize: const Size(60, 40), // Adjust the size as needed
             ),
-            child: Text('Download'),
+            child: const Text('Download'),
           ),
         )
-      : Text('N/A'),
+      : const Text('N/A'),
 )
 
 
@@ -567,11 +585,11 @@ Future<void> _downloadImage(String url, String fileName) async {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Container(
+          SizedBox(
             width: 150,
             child: Text(
               '$label: ',
-              style: TextStyle(fontWeight: FontWeight.bold),
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
           Expanded(
@@ -610,7 +628,7 @@ Future<void> _downloadImage(String url, String fileName) async {
         children: <Widget>[
           Text(
             title,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 18.0,
               fontWeight: FontWeight.bold,
               color: Colors.blue,
@@ -626,10 +644,10 @@ Future<void> _downloadImage(String url, String fileName) async {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Employee Details'),
+        title: const Text('Employee Details'),
         actions: [
           IconButton(
-            icon: Icon(Icons.close),
+            icon: const Icon(Icons.close),
             onPressed: () {
               Navigator.of(context).pop(); // Close the details page
             },
@@ -639,7 +657,7 @@ Future<void> _downloadImage(String url, String fileName) async {
       body: Form(
         key: _formKey,
         child: ListView(
-          padding: EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(16.0),
           children: <Widget>[
             _buildCategory(
               'Personal Information',
@@ -657,8 +675,7 @@ Future<void> _downloadImage(String url, String fileName) async {
                   }
                   return null;
                 }),
-                _buildDetailRow('Email', 'email',
-                    isEmail: true, validator: _validateEmail),
+               
                 _buildDetailRow('Phone Number', 'phoneNo',
                     isNumber: true, validator: _validatePhoneNumber),
                 _buildDetailRow('Date of Birth', 'dob',
@@ -679,8 +696,6 @@ Future<void> _downloadImage(String url, String fileName) async {
                 }),
                 _buildDetailRow('Aadhar Number', 'aadharNo',
                     validator: _validateAadharNumber),
-                _buildDetailRow('PAN Number', 'panNo',
-                    validator: _validatePanNumber),
                 _buildImageRow('Profile Picture', 'dpImageUrl'),
                 _buildAttachmentRow('Aadhar Doc', 'adhaarImageUrl'),
                 _buildAttachmentRow('Support Doc', 'supportImageUrl'),
@@ -692,7 +707,7 @@ Future<void> _downloadImage(String url, String fileName) async {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Container(
+                    const SizedBox(
                       width: 150,
                       child: Text(
                         'Joining Date*: ',
@@ -715,7 +730,7 @@ Future<void> _downloadImage(String url, String fileName) async {
                             )
                           : Text(
                               employeeData['joiningDate'] ?? 'N/A',
-                              style: TextStyle(color: Colors.black87),
+                              style: const TextStyle(color: Colors.black87),
                             ),
                     ),
                   ],
@@ -759,7 +774,7 @@ Future<void> _downloadImage(String url, String fileName) async {
       ),
       bottomNavigationBar: Container(
         color: Colors.grey[200],
-        padding: EdgeInsets.symmetric(vertical: 10.0, horizontal: 20.0),
+        padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 20.0),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: <Widget>[
@@ -768,9 +783,9 @@ Future<void> _downloadImage(String url, String fileName) async {
                 backgroundColor: Colors.red,
               ),
               onPressed: _rejectChanges,
-              child: Text('Reject'),
+              child: const Text('Reject'),
             ),
-            SizedBox(width: 10.0),
+            const SizedBox(width: 10.0),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green,

@@ -216,24 +216,52 @@
 //     final SharedPreferences prefs = await SharedPreferences.getInstance();
 //     await prefs.remove('userUid');
 //   }
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:ooriba_s3/HR/hr_dashboard_page.dart';
-import 'package:ooriba_s3/facial/HomeScreen.dart';
 import 'package:ooriba_s3/main.dart';
 import 'package:ooriba_s3/post_login_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
   Future<bool> signin({
-    required String email,
+    required String identifier,
     required String password,
     required BuildContext context,
   }) async {
+    String? email;
+
     try {
+      // Determine if the identifier is an email or phone number
+      if (isEmail(identifier)) {
+        email = identifier;
+      } else if (isPhoneNumber(identifier)) {
+        email = await getEmailFromPhoneNumber(identifier);
+        if (email == null) {
+          Fluttertoast.showToast(
+            msg: 'No user found for that phone number. $identifier',
+            toastLength: Toast.LENGTH_LONG,
+            gravity: ToastGravity.SNACKBAR,
+            backgroundColor: Colors.black54,
+            textColor: Colors.white,
+            fontSize: 14.0,
+          );
+          return false;
+        }
+      } else {
+        Fluttertoast.showToast(
+          msg: 'Invalid email or phone number format.',
+          toastLength: Toast.LENGTH_LONG,
+          gravity: ToastGravity.SNACKBAR,
+          backgroundColor: Colors.black54,
+          textColor: Colors.white,
+          fontSize: 14.0,
+        );
+        return false;
+      }
+
       // Fetch the document from the Firestore collection "Regemp"
       DocumentSnapshot<Map<String, dynamic>> documentSnapshot =
           await FirebaseFirestore.instance
@@ -244,7 +272,7 @@ class AuthService {
       // Check if the document exists
       if (!documentSnapshot.exists) {
         Fluttertoast.showToast(
-          msg: 'No user found for that email.',
+          msg: 'No user found for that email in database. $email',
           toastLength: Toast.LENGTH_LONG,
           gravity: ToastGravity.SNACKBAR,
           backgroundColor: Colors.black54,
@@ -256,12 +284,30 @@ class AuthService {
 
       // Retrieve the role from the document
       String role = documentSnapshot.data()?['role'] ?? '';
-
+      String emai=documentSnapshot.data()?['email'] ?? '';
+      String pass=documentSnapshot.data()?['password'] ?? '';
+      if(emai==null && emai!="null" ){
       // Sign in with Firebase Authentication
       await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: email,
+        email: email!,
         password: password,
       );
+      }
+      else {
+        if(pass!=password){
+ Fluttertoast.showToast(
+          msg: 'Incorrect Password',
+          toastLength: Toast.LENGTH_LONG,
+          gravity: ToastGravity.SNACKBAR,
+          backgroundColor: Colors.black54,
+          textColor: Colors.white,
+          fontSize: 14.0,
+        );
+
+          return false;
+      };
+      }
+
 
       await saveUserSession(email, role);
 
@@ -272,7 +318,8 @@ class AuthService {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (BuildContext context) =>  PostLoginPage(email: email, userDetails: {}),
+            builder: (BuildContext context) =>
+                PostLoginPage(phoneNumber: email!, userDetails: {}),
           ),
         );
         return true;
@@ -298,7 +345,7 @@ class AuthService {
     } on FirebaseAuthException catch (e) {
       String message = '';
       if (e.code == 'invalid-email') {
-        message = 'No user found for that email.';
+        message = 'No user found for that email. Firebase';
       } else if (e.code == 'invalid-credential') {
         message = 'Wrong password provided for that user.';
       }
@@ -319,13 +366,25 @@ class AuthService {
   }) async {
     await FirebaseAuth.instance.signOut();
     await clearUserSession();
-    Navigator.pushReplacement(
+    Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(
         builder: (BuildContext context) => LoginPage(),
-      ),
+      ),(Route<dynamic> route) => false
     );
   }
+  //   Future<void> signout({
+  //   required BuildContext context,
+  // }) async {
+  //   await FirebaseAuth.instance.signOut();
+  //   await Future.delayed(const Duration(seconds: 1));
+  //   Navigator.pushReplacement(
+  //     context,
+  //     MaterialPageRoute(
+  //       builder: (BuildContext context) => LoginPage(),
+  //     ),
+  //   );
+  // }
 
   Future<String?> getUserSession() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -348,7 +407,32 @@ class AuthService {
     await prefs.remove('email');
     await prefs.remove('role');
   }
+
+  bool isEmail(String input) {
+    // Simple regex to check if the input is an email
+    final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
+    return emailRegex.hasMatch(input);
+  }
+
+  bool isPhoneNumber(String input) {
+    // Simple regex to check if the input is a phone number
+    final phoneRegex = RegExp(r'^\d{10}$');
+    return phoneRegex.hasMatch(input);
+  }
+
+  Future<String?> getEmailFromPhoneNumber(String phoneNumber) async {
+    // Query Firestore to get the email associated with the phone number
+    QuerySnapshot<Map<String, dynamic>> snapshot = await FirebaseFirestore
+        .instance
+        .collection('Regemp')
+        .where('phoneNo', isEqualTo: phoneNumber)
+        .limit(1)
+        .get();
+
+    if (snapshot.docs.isEmpty) {
+      return null;
+    }
+
+    return snapshot.docs.first.id;
+  }
 }
-
-
-
