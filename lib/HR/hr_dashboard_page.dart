@@ -1,14 +1,19 @@
+
 // import 'package:flutter/material.dart';
 // import 'package:cloud_firestore/cloud_firestore.dart';
+// // import 'package:ooriba_s3/HR/add_employees.dart';
 // import 'package:ooriba_s3/HR/employee_details_page.dart';
+// import 'package:ooriba_s3/HR/provideAttendance.dart';
 // import 'package:ooriba_s3/HR/registered_employees_page.dart';
-// import 'package:ooriba_s3/HR/rejected_employees_page.dart';
+// import 'package:ooriba_s3/HR/leave_approval.dart';
+// import 'package:ooriba_s3/HR/leave_report.dart';
 // import 'package:ooriba_s3/services/auth_service.dart';
 // import 'package:ooriba_s3/services/registered_service.dart';
 // import 'attendance.dart'; // Assuming this file contains DatePickerButton widget
+// import 'rejected_employees_page.dart';
 
 // class HRDashboardPage extends StatefulWidget {
-//   const HRDashboardPage({Key? key}) : super(key: key);
+//   const HRDashboardPage({super.key});
 
 //   @override
 //   _HRDashboardPageState createState() => _HRDashboardPageState();
@@ -24,7 +29,7 @@
 //         title: const Text('HR Dashboard'),
 //         actions: [
 //           IconButton(
-//             icon: Icon(Icons.logout),
+//             icon: const Icon(Icons.logout),
 //             onPressed: () async {
 //               await AuthService().signout(context: context);
 //             },
@@ -64,10 +69,42 @@
 //             ),
 //             ListTile(
 //               leading: const Icon(Icons.time_to_leave),
-//               title: const Text('Leave'),
+//               title: const Text('Employee Leave Requests'),
 //               onTap: () {
 //                 Navigator.pop(context);
-//                 // Navigate to Leave Page
+//                 Navigator.push(
+//                   context,
+//                   MaterialPageRoute(
+//                     builder: (context) =>
+//                         LeaveApprovalPage(), // Navigate to LeaveApprovalPage
+//                   ),
+//                 );
+//               },
+//             ),
+//             //  ListTile(
+//             //   leading: const Icon(Icons.time_to_leave),
+//             //   title: const Text('Leave Report'),
+//             //   onTap: () {
+//             //     Navigator.pop(context);
+//             //     Navigator.push(
+//             //       context,
+//             //       MaterialPageRoute(
+//             //         builder: (context) =>
+//             //             LeaveReportPage(), // Navigate to LeaveApprovalPage
+//             //       ),
+//             //     );
+//             //   },
+//             // ),
+//             ListTile(
+//               leading: const Icon(Icons.checklist_outlined),
+//               title: const Text('Provide Attendance'),
+//               onTap: () {
+//                 Navigator.pop(context);
+//                 Navigator.push(
+//                   context,
+//                   MaterialPageRoute(
+//                       builder: (context) => ProvideattendancePage()),
+//                 );
 //               },
 //             ),
 //             ListTile(
@@ -77,10 +114,23 @@
 //                 Navigator.pop(context);
 //                 Navigator.push(
 //                   context,
-//                   MaterialPageRoute(builder: (context) => DatePickerButton()),
+//                   MaterialPageRoute(
+//                       builder: (context) => const DatePickerButton()),
 //                 );
 //               },
 //             ),
+//             // ListTile(
+//             //   leading: const Icon(Icons.time_to_leave),
+//             //   title: const Text('Add employee'),
+//             //   onTap: () {
+//             //     Navigator.pop(context);
+//             //     Navigator.push(
+//             //       context,
+//             //       MaterialPageRoute(builder: (context) => AddEmployeePage()),
+//             //     );
+//             //   },
+//             // ),
+
 //             ListTile(
 //               leading: const Icon(Icons.logout),
 //               title: const Text('Log Out'),
@@ -96,8 +146,8 @@
 //         child: Column(
 //           crossAxisAlignment: CrossAxisAlignment.start,
 //           children: <Widget>[
-//             Padding(
-//               padding: const EdgeInsets.all(16.0),
+//             const Padding(
+//               padding: EdgeInsets.all(16.0),
 //               child: Text(
 //                 'Dashboard',
 //                 style: TextStyle(
@@ -111,7 +161,7 @@
 //               child: Row(
 //                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
 //                 children: <Widget>[
-//                   Expanded(
+//                   Flexible(
 //                     child: _buildDashboardBlock(
 //                       context,
 //                       'Registered Employees',
@@ -120,18 +170,18 @@
 //                       _showRegisteredEmployees,
 //                     ),
 //                   ),
-//                   SizedBox(width: 16.0),
-//                   Expanded(
-//                     child: _buildDashboardBlock(
-//                       context,
-//                       'New Applicants',
-//                       Icons.person_add,
-//                       Colors.green,
-//                       _showNewApplicants,
-//                     ),
-//                   ),
-//                   SizedBox(width: 16.0),
-//                   Expanded(
+//                   // SizedBox(width: 16.0),
+//                   // Expanded(
+//                   //   child: _buildDashboardBlock(
+//                   //     context,
+//                   //     'New Applicants',
+//                   //     Icons.person_add,
+//                   //     Colors.green,
+//                   //     _showNewApplicants,
+//                   //   ),
+//                   // ),
+//                   const SizedBox(width: 16.0),
+//                   Flexible(
 //                     child: _buildDashboardBlock(
 //                       context,
 //                       'Rejected Applications',
@@ -143,11 +193,11 @@
 //                 ],
 //               ),
 //             ),
-//             SizedBox(height: 16.0),
-//             Padding(
-//               padding: const EdgeInsets.symmetric(horizontal: 16.0),
+//             const SizedBox(height: 16.0),
+//             const Padding(
+//               padding: EdgeInsets.symmetric(horizontal: 16.0),
 //               child: Text(
-//                 'Employee Details',
+//                 'Applicant Details',
 //                 style: TextStyle(
 //                   fontSize: 18.0,
 //                   fontWeight: FontWeight.bold,
@@ -159,11 +209,11 @@
 //                   FirebaseFirestore.instance.collection('Employee').snapshots(),
 //               builder: (context, snapshot) {
 //                 if (snapshot.connectionState == ConnectionState.waiting) {
-//                   return Center(child: CircularProgressIndicator());
+//                   return const Center(child: CircularProgressIndicator());
 //                 } else if (snapshot.hasError) {
 //                   return Center(child: Text('Error: ${snapshot.error}'));
 //                 } else if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-//                   return Center(child: Text('No employees found'));
+//                   return const Center(child: Text('No employees found'));
 //                 }
 
 //                 final employees = snapshot.data!.docs;
@@ -200,10 +250,10 @@
 //               color: Colors.white,
 //               size: 36.0,
 //             ),
-//             SizedBox(height: 8.0),
+//             const SizedBox(height: 8.0),
 //             Text(
 //               title,
-//               style: TextStyle(
+//               style: const TextStyle(
 //                 color: Colors.white,
 //                 fontSize: 18.0,
 //                 fontWeight: FontWeight.bold,
@@ -218,49 +268,53 @@
 //   Widget _buildEmployeeCard(BuildContext context, Map<String, dynamic> data,
 //       DocumentReference docRef) {
 //     return Card(
-//       margin: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+//       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
 //       child: Padding(
-//         padding: EdgeInsets.all(16.0),
+//         padding: const EdgeInsets.all(16.0),
 //         child: Column(
 //           crossAxisAlignment: CrossAxisAlignment.start,
 //           children: <Widget>[
 //             Row(
 //               children: <Widget>[
 //                 CircleAvatar(
-//           radius: 30.0,
-//           backgroundColor: Colors.purple[100],
-//           backgroundImage: data['dpImageUrl'] != null && data['dpImageUrl'].isNotEmpty
-//               ? NetworkImage(data['dpImageUrl'])
-//               : null,
-//           child: data['dpImageUrl'] == null || data['dpImageUrl'].isEmpty
-//               ? Text(
-//                   '${data['firstName'][0]}${data['lastName'][0]}',
-//                   style: TextStyle(
-//                     fontSize: 24.0,
-//                     color: Colors.white,
+//                   radius: 30.0,
+//                   backgroundColor: Colors.purple[100],
+//                   backgroundImage: data['dpImageUrl'] != null &&
+//                           data['dpImageUrl'].isNotEmpty
+//                       ? NetworkImage(data['dpImageUrl'])
+//                       : null,
+//                   child:
+//                       data['dpImageUrl'] == null || data['dpImageUrl'].isEmpty
+//                           ? Text(
+//                               '${data['firstName'][0]}${data['lastName'][0]}',
+//                               style: const TextStyle(
+//                                 fontSize: 24.0,
+//                                 color: Colors.white,
+//                               ),
+//                             )
+//                           : null,
+//                 ),
+//                 const SizedBox(width: 16.0),
+//                 Flexible(
+//                   child: Column(
+//                     crossAxisAlignment: CrossAxisAlignment.start,
+//                     children: <Widget>[
+//                       Text(
+//                         '${data['firstName']} ${data['lastName']}',
+//                         style: const TextStyle(
+//                           fontSize: 18.0,
+//                           fontWeight: FontWeight.bold,
+//                         ),
+//                       ),
+//                       const SizedBox(height: 4.0),
+//                       Text('Phone: ${data['phoneNo']}'),
+//                       Text('Email: ${data['email']}'),
+//                     ],
 //                   ),
 //                 )
-//               : null,
-//         ),
-//                 SizedBox(width: 16.0),
-//                 Column(
-//                   crossAxisAlignment: CrossAxisAlignment.start,
-//                   children: <Widget>[
-//                     Text(
-//                       '${data['firstName']} ${data['lastName']}',
-//                       style: TextStyle(
-//                         fontSize: 18.0,
-//                         fontWeight: FontWeight.bold,
-//                       ),
-//                     ),
-//                     SizedBox(height: 4.0),
-//                     Text('Phone: ${data['phoneNo']}'),
-//                     Text('Email: ${data['email']}'),
-//                   ],
-//                 ),
 //               ],
 //             ),
-//             SizedBox(height: 16.0),
+//             const SizedBox(height: 16.0),
 //             Row(
 //               mainAxisAlignment: MainAxisAlignment.end,
 //               children: <Widget>[
@@ -277,7 +331,7 @@
 //                       ),
 //                     );
 //                   },
-//                   child: Text(
+//                   child: const Text(
 //                     'View More',
 //                     style: TextStyle(color: Colors.white),
 //                   ),
@@ -293,34 +347,34 @@
 //   void _showRegisteredEmployees(BuildContext context) {
 //     Navigator.push(
 //       context,
-//       MaterialPageRoute(builder: (context) => RegisteredEmployeesPage()),
+//       MaterialPageRoute(builder: (context) => const RegisteredEmployeesPage()),
 //     );
 //   }
 
-//   void _showNewApplicants(BuildContext context) {
-//     showDialog(
-//       context: context,
-//       builder: (BuildContext context) {
-//         return AlertDialog(
-//           title: const Text('New Applicants'),
-//           content: const Text('List of new applicants...'),
-//           actions: <Widget>[
-//             TextButton(
-//               child: const Text('Close'),
-//               onPressed: () {
-//                 Navigator.of(context).pop();
-//               },
-//             ),
-//           ],
-//         );
-//       },
-//     );
-//   }
+//   // void _showNewApplicants(BuildContext context) {
+//   //   showDialog(
+//   //     context: context,
+//   //     builder: (BuildContext context) {
+//   //       return AlertDialog(
+//   //         title: const Text('New Applicants'),
+//   //         content: const Text('List of new applicants...'),
+//   //         actions: <Widget>[
+//   //           TextButton(
+//   //             child: const Text('Close'),
+//   //             onPressed: () {
+//   //               Navigator.of(context).pop();
+//   //             },
+//   //           ),
+//   //         ],
+//   //       );
+//   //     },
+//   //   );
+//   // }
 
 //   void _showRejectedApplications(BuildContext context) {
 //     Navigator.of(context).push(
 //       MaterialPageRoute(
-//         builder: (context) => RejectedEmployeesPage(),
+//         builder: (context) => const RejectedEmployeesPage(),
 //       ),
 //     );
 //   }
@@ -338,7 +392,7 @@
 // class EditEmployeePage extends StatefulWidget {
 //   final Map<String, dynamic> employeeData;
 
-//   EditEmployeePage({required this.employeeData});
+//   const EditEmployeePage({super.key, required this.employeeData});
 
 //   @override
 //   _EditEmployeePageState createState() => _EditEmployeePageState();
@@ -427,10 +481,28 @@
 //     );
 //   }
 // }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ooriba_s3/HR/employee_details_page.dart';
+import 'package:ooriba_s3/HR/provideAttendance.dart';
 import 'package:ooriba_s3/HR/registered_employees_page.dart';
+import 'package:ooriba_s3/HR/leave_approval.dart';
+import 'package:ooriba_s3/HR/leave_report.dart';
 import 'package:ooriba_s3/services/auth_service.dart';
 import 'package:ooriba_s3/services/registered_service.dart';
 import 'attendance.dart'; // Assuming this file contains DatePickerButton widget
@@ -446,6 +518,88 @@ class HRDashboardPage extends StatefulWidget {
 class _HRDashboardPageState extends State<HRDashboardPage> {
   final RegisteredService _registeredService = RegisteredService();
 
+
+  @override
+  // void initState() {
+  //   super.initState();
+  //   setState(() {}); 
+  // }
+  final FirebaseFirestore _db=FirebaseFirestore.instance; 
+  Future<Map<String, dynamic>?> fetchEmployeeDetails(String employeeId) async {
+  try {
+    QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+        .collection('Regemp')
+        .where('employeeId', isEqualTo: employeeId)
+        .get();
+
+    if (querySnapshot.docs.isNotEmpty) {
+      // Assuming there's only one document for the given employeeId
+      return querySnapshot.docs.first.data() as Map<String, dynamic>?;
+    }
+  } catch (e) {
+    print('Failed to fetch employee details: $e');
+  }
+  return null;
+}
+
+Future<List<Map<String, dynamic>>> _fetchRequestedEmployees() async {
+  List<Map<String, dynamic>> employees = [];
+
+  try {
+    QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+        .collection('SiteManagerAuth')
+        .where('status', isEqualTo: 'requested')
+        .get();
+
+    for (var doc in querySnapshot.docs) {
+      String employeeId = doc.id;
+      String imageUrl = doc['imageUrl'];
+
+      // Fetch additional details from Regemp
+      var employeeDetails = await fetchEmployeeDetails(employeeId);
+      String name = (employeeDetails?['firstName']) ?? '';
+      String location=(employeeDetails?['location']) ?? '';
+      String phoneNo=(employeeDetails?['phoneNo']) ?? '';
+
+      employees.add({
+        'employeeId': employeeId,
+        'imageUrl': imageUrl,
+        'name': name,
+        'location':location,
+        'phoneNo':phoneNo
+      });
+    }
+  } catch (e) {
+    print('Failed to fetch requested employees: $e');
+  }
+
+  return employees;
+}
+
+
+Future<void> _approveEmployee(String employeeId) async {
+    await _db.collection('SiteManagerAuth').doc(employeeId).update({
+      'status': 'approved',
+      'set':'1'
+    });
+  }
+
+ void _showImageDialog(BuildContext context, String imageUrl) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        content: Image.network(imageUrl),
+        actions: <Widget>[
+          TextButton(
+            child: const Text('Close'),
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+          ),
+        ],
+      ),
+    );
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -493,10 +647,28 @@ class _HRDashboardPageState extends State<HRDashboardPage> {
             ),
             ListTile(
               leading: const Icon(Icons.time_to_leave),
-              title: const Text('Leave'),
+              title: const Text('Employee Leave Requests'),
               onTap: () {
                 Navigator.pop(context);
-                // Navigate to Leave Page
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        LeaveApprovalPage(), // Navigate to LeaveApprovalPage
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.checklist_outlined),
+              title: const Text('Provide Attendance'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => ProvideattendancePage()),
+                );
               },
             ),
             ListTile(
@@ -506,10 +678,12 @@ class _HRDashboardPageState extends State<HRDashboardPage> {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const DatePickerButton()),
+                  MaterialPageRoute(
+                      builder: (context) => const DatePickerButton()),
                 );
               },
             ),
+            
             ListTile(
               leading: const Icon(Icons.logout),
               title: const Text('Log Out'),
@@ -549,16 +723,6 @@ class _HRDashboardPageState extends State<HRDashboardPage> {
                       _showRegisteredEmployees,
                     ),
                   ),
-                  // SizedBox(width: 16.0),
-                  // Expanded(
-                  //   child: _buildDashboardBlock(
-                  //     context,
-                  //     'New Applicants',
-                  //     Icons.person_add,
-                  //     Colors.green,
-                  //     _showNewApplicants,
-                  //   ),
-                  // ),
                   const SizedBox(width: 16.0),
                   Expanded(
                     child: _buildDashboardBlock(
@@ -576,12 +740,65 @@ class _HRDashboardPageState extends State<HRDashboardPage> {
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.0),
               child: Text(
-                'Applicant Details',
+                'Applicant Details/ Face Registration',
                 style: TextStyle(
                   fontSize: 18.0,
                   fontWeight: FontWeight.bold,
                 ),
               ),
+            ),
+             FutureBuilder<List<Map<String, dynamic>>>(
+              future: _fetchRequestedEmployees(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                } else if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return const Center(child: Text(''));
+                } else {
+                  List<Map<String, dynamic>> employees = snapshot.data!;
+                  return Column(
+                    children: employees.map((data) {
+                      String employeeId = data['employeeId'] ?? '';
+                      String imageUrl = data['imageUrl'] ?? '';
+                      String status = "Face registration request";
+                       String name = data['name'] ?? 'Unknown';
+                       String location=data['location'];
+                       String phoneNo=data['phoneNo'];
+                       
+                     return Card(
+                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                child: ListTile(
+                  leading: InkWell(
+                    onTap: () {
+                      if (imageUrl.isNotEmpty) {
+                        _showImageDialog(context, imageUrl);
+                      }
+                    },
+                    child: imageUrl.isNotEmpty
+                        ? Image.network(imageUrl, width: 50, height: 50, fit: BoxFit.cover)
+                        : const Icon(Icons.image_not_supported, size: 50),
+                  ),
+                  title: Text("$name:$employeeId", style: const TextStyle(
+                        fontSize: 18.0,
+                        fontWeight: FontWeight.bold,
+                      ),),
+                  subtitle: Text('Location: $location\nPhone:$phoneNo\n$status'),
+                  
+                  trailing: ElevatedButton(
+                    onPressed: () async {
+                      await _approveEmployee(employeeId);
+                      setState(() {}); // Refresh the UI
+                    },
+                    child: const Text('Approve'),
+                  ),
+                ),
+              );
+            }).toList(),
+                  );
+                }
+              },
             ),
             StreamBuilder<QuerySnapshot>(
               stream:
@@ -656,21 +873,23 @@ class _HRDashboardPageState extends State<HRDashboardPage> {
             Row(
               children: <Widget>[
                 CircleAvatar(
-          radius: 30.0,
-          backgroundColor: Colors.purple[100],
-          backgroundImage: data['dpImageUrl'] != null && data['dpImageUrl'].isNotEmpty
-              ? NetworkImage(data['dpImageUrl'])
-              : null,
-          child: data['dpImageUrl'] == null || data['dpImageUrl'].isEmpty
-              ? Text(
-                  '${data['firstName'][0]}${data['lastName'][0]}',
-                  style: const TextStyle(
-                    fontSize: 24.0,
-                    color: Colors.white,
-                  ),
-                )
-              : null,
-        ),
+                  radius: 30.0,
+                  backgroundColor: Colors.purple[100],
+                  backgroundImage: data['dpImageUrl'] != null &&
+                          data['dpImageUrl'].isNotEmpty
+                      ? NetworkImage(data['dpImageUrl'])
+                      : null,
+                  child:
+                      data['dpImageUrl'] == null || data['dpImageUrl'].isEmpty
+                          ? Text(
+                              '${data['firstName'][0]}${data['lastName'][0]}',
+                              style: const TextStyle(
+                                fontSize: 24.0,
+                                color: Colors.white,
+                              ),
+                            )
+                          : null,
+                ),
                 const SizedBox(width: 16.0),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -726,25 +945,6 @@ class _HRDashboardPageState extends State<HRDashboardPage> {
     );
   }
 
-  // void _showNewApplicants(BuildContext context) {
-  //   showDialog(
-  //     context: context,
-  //     builder: (BuildContext context) {
-  //       return AlertDialog(
-  //         title: const Text('New Applicants'),
-  //         content: const Text('List of new applicants...'),
-  //         actions: <Widget>[
-  //           TextButton(
-  //             child: const Text('Close'),
-  //             onPressed: () {
-  //               Navigator.of(context).pop();
-  //             },
-  //           ),
-  //         ],
-  //       );
-  //     },
-  //   );
-  // }
 
   void _showRejectedApplications(BuildContext context) {
     Navigator.of(context).push(

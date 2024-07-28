@@ -1,8 +1,8 @@
 // import 'package:flutter/material.dart';
 // import 'package:image_picker/image_picker.dart';
 // import 'package:intl/intl.dart';
-// import 'package:ooriba_s3/employee_signup_success.dart';
-// import 'package:ooriba_s3/services/employeeService.dart';
+// import 'package:ooriba_s3_s3/employee_signup_success.dart';
+// import 'package:ooriba_s3_s3/services/employeeService.dart';
 // import 'dart:io';
 
 // class SignUpPage extends StatefulWidget {
@@ -423,11 +423,10 @@ import 'package:ooriba_s3/employee_signup_success.dart';
 import 'package:ooriba_s3/services/employeeService.dart';
 import 'dart:io';
 
-// Custom widget to display label with red star
 class LabelWithStar extends StatelessWidget {
   final String text;
 
-  const LabelWithStar({Key? key, required this.text}) : super(key: key);
+  const LabelWithStar({required this.text});
 
   @override
   Widget build(BuildContext context) {
@@ -435,15 +434,27 @@ class LabelWithStar extends StatelessWidget {
       children: [
         Text(
           text,
-          style: const TextStyle(
-            color: Colors.black,
-          ),
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         const Text(
           '*',
-          style: TextStyle(color: Colors.red, fontSize: 16),
+          style: TextStyle(color: Colors.red),
         ),
       ],
+    );
+  }
+}
+
+class Label extends StatelessWidget {
+  final String text;
+
+  const Label({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: const TextStyle(fontWeight: FontWeight.bold),
     );
   }
 }
@@ -489,7 +500,34 @@ class _SignUpPageState extends State<SignUpPage> {
   //     });
   //   }
   // }
-   Future<void> _pickImage(int x) async {
+  @override
+  void initState() {
+    super.initState();
+    _firstName.addListener(() {
+      _capitalizeFirstLetter(_firstName);
+    });
+    _lastName.addListener(() {
+      _capitalizeFirstLetter(_lastName);
+    });
+    _panNo.addListener(() {
+      _panNo.value = _panNo.value.copyWith(
+        text: _panNo.text.toUpperCase(),
+        selection: TextSelection.collapsed(offset: _panNo.text.length),
+      );
+    });
+  }
+
+  void _capitalizeFirstLetter(TextEditingController controller) {
+    String text = controller.text;
+    if (text.isNotEmpty) {
+      controller.value = controller.value.copyWith(
+        text: text[0].toUpperCase() + text.substring(1),
+        selection: TextSelection.collapsed(offset: text.length),
+      );
+    }
+  }
+
+  Future<void> _pickImage(int x) async {
     final ImageSource? source = await showDialog<ImageSource>(
       context: context,
       builder: (BuildContext context) {
@@ -512,7 +550,7 @@ class _SignUpPageState extends State<SignUpPage> {
         );
       },
     );
-        if (source != null) {
+    if (source != null) {
       final pickedFile = await ImagePicker().pickImage(source: source);
       if (pickedFile != null) {
         setState(() {
@@ -530,16 +568,35 @@ class _SignUpPageState extends State<SignUpPage> {
     }
   }
 
+  String? dobError;
+
   void _submitForm() async {
     if (_formKey.currentState!.validate()) {
+      setState(() {
+        dobError = null;
+      });
+
+      if (_dob == null) {
+        setState(() {
+          dobError = 'Please enter Date of Birth';
+        });
+        return;
+      }
+
+      final age = DateTime.now().year - _dob!.year;
+      if (age < 18) {
+        setState(() {
+          dobError = 'You must be at least 18 years old';
+        });
+        return;
+      }
+
       final firstName = _firstName.text;
       final middleName = _middleName.text;
       final lastName = _lastName.text;
       final email = _email.text.isNotEmpty ? _email.text : null;
       final password = _password.text; // Add password field
-      var panNo = _panNo.text.isNotEmpty
-          ? _panNo.text.toUpperCase()
-          : null; // Make PAN optional
+      var panNo = _panNo.text.isNotEmpty ? _panNo.text.toUpperCase() : null;
       final resAdd = _residentialAddress.text;
       final perAdd = _permanentAddress.text;
       final phoneNumber = _phoneNumber.text;
@@ -578,10 +635,6 @@ class _SignUpPageState extends State<SignUpPage> {
           SnackBar(content: Text('Failed to sign up: $e')),
         );
       }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please verify your phone number')),
-      );
     }
   }
 
@@ -644,10 +697,14 @@ class _SignUpPageState extends State<SignUpPage> {
                         },
                       ),
                       const SizedBox(height: 20),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Label(text: 'Middle Name'),
+                      ),
+                      const SizedBox(height: 20),
                       TextFormField(
                         controller: _middleName,
                         decoration: const InputDecoration(
-                          labelText: 'Middle Name',
                           border: OutlineInputBorder(),
                         ),
                         validator: (value) {
@@ -682,10 +739,14 @@ class _SignUpPageState extends State<SignUpPage> {
                         },
                       ),
                       const SizedBox(height: 20),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Label(text: 'Email ID'),
+                      ),
+                      const SizedBox(height: 20),
                       TextFormField(
                         controller: _email,
                         decoration: const InputDecoration(
-                          labelText: 'Email ID',
                           border: OutlineInputBorder(),
                         ),
                         validator: (value) {
@@ -728,15 +789,13 @@ class _SignUpPageState extends State<SignUpPage> {
                         decoration: const InputDecoration(
                           border: OutlineInputBorder(),
                         ),
+                        keyboardType: TextInputType.phone,
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Please enter your phone number';
                           }
-                          if (value.length != 10) {
-                            return 'Phone number must be exactly 10 digits';
-                          }
-                          if (RegExp(r'[^0-9]').hasMatch(value)) {
-                            return 'Phone number can only contain digits';
+                          if (!RegExp(r'^\d{10}$').hasMatch(value)) {
+                            return 'Please enter a valid 10-digit phone number';
                           }
                           return null;
                         },
@@ -752,6 +811,10 @@ class _SignUpPageState extends State<SignUpPage> {
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Please enter your residential address';
+                          } else if (RegExp(r'^\d+$').hasMatch(value)) {
+                            return 'Address should not be only numbers';
+                          } else if (value.length > 100) {
+                            return 'Address should not exceed 100 characters';
                           }
                           return null;
                         },
@@ -767,73 +830,68 @@ class _SignUpPageState extends State<SignUpPage> {
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Please enter your permanent address';
+                          } else if (RegExp(r'^\d+$').hasMatch(value)) {
+                            return 'Address should not be only numbers';
+                          } else if (value.length > 100) {
+                            return 'Address should not exceed 100 characters';
                           }
                           return null;
                         },
                       ),
-                      const SizedBox(height: 20),
-                      GestureDetector(
-                        onTap: () async {
-                          final selectedDate = await showDatePicker(
-                            context: context,
-                            initialDate: DateTime.now(),
-                            firstDate: DateTime(1900),
-                            lastDate: DateTime.now(),
-                          );
-                          if (selectedDate != null) {
-                            setState(() {
-                              _dob = selectedDate;
-                            });
-                          }
-                        },
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            LabelWithStar(text: 'Date of Birth'),
-                            const SizedBox(height: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 16.0, vertical: 12.0),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(5.0),
-                                border: Border.all(color: Colors.grey),
-                              ),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    _dob == null
-                                        ? 'Date of Birth'
-                                        : DateFormat('dd/MM/yyyy')
-                                            .format(_dob!),
-                                    style: TextStyle(
-                                      color: _dob == null
-                                          ? Colors.grey
-                                          : Colors.black,
-                                    ),
-                                  ),
-                                  const Icon(Icons.calendar_today),
-                                ],
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          LabelWithStar(text: 'Date of Birth'),
+                          const SizedBox(height: 8),
+                          GestureDetector(
+                            onTap: () async {
+                              final pickedDate = await showDatePicker(
+                                context: context,
+                                initialDate: DateTime(2000),
+                                firstDate: DateTime(1900),
+                                lastDate: DateTime.now(),
+                              );
+                              if (pickedDate != null) {
+                                setState(() {
+                                  _dob = pickedDate;
+                                });
+                              }
+                            },
+                            child: AbsorbPointer(
+                              child: TextFormField(
+                                decoration: InputDecoration(
+                                  border: const OutlineInputBorder(),
+                                  hintText: _dob != null
+                                      ? DateFormat('dd/MM/yyyy').format(_dob!)
+                                      : 'Select your date of birth',
+                                ),
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                          if (dobError != null) // Display error message if any
+                            Text(
+                              dobError!,
+                              style: const TextStyle(
+                                  color: Colors.red, fontSize: 12),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Label(text: 'PAN Number'),
                       ),
                       const SizedBox(height: 20),
                       TextFormField(
                         controller: _panNo,
                         decoration: const InputDecoration(
-                          labelText: 'PAN Number',
                           border: OutlineInputBorder(),
                         ),
                         validator: (value) {
                           if (value != null && value.isNotEmpty) {
-                            if (value.length != 10) {
-                              return 'PAN number must be exactly 10 characters';
-                            }
-                            if (RegExp(r'[^a-zA-Z0-9]').hasMatch(value)) {
-                              return 'PAN number can only contain letters and digits';
+                            if (!RegExp(r'^[a-zA-Z]{5}[0-9]{4}[a-zA-Z]{1}$')
+                                .hasMatch(value)) {
+                              return 'Please enter a valid PAN number in the format AAAAA9999A';
                             }
                           }
                           return null;
@@ -862,7 +920,7 @@ class _SignUpPageState extends State<SignUpPage> {
                         },
                       ),
                       const SizedBox(height: 20),
-                       ElevatedButton(
+                      ElevatedButton(
                         onPressed: () => _pickImage(2),
                         child: const Text('Upload Profile Picture'),
                       ),
